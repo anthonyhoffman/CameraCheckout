@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Check In a Camera{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h1 class="h3 mb-4">Check In a Camera</h1>
+
+    <form method="post">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Your NetID</label>
+        <input type="text" name="netid" class="form-control" placeholder="e.g. ahoffma8"
+               value="{{ netid }}" required autofocus>
+      </div>
+      <div class="d-grid mb-3">
+        <button type="submit" class="btn btn-outline-primary">Look up my camera</button>
+      </div>
+    </form>
+
+    {% if netid and not reservation %}
+      <div class="alert alert-info">
+        No checked-out camera found for <strong>{{ netid }}</strong>.
+        If you have a reservation that hasn't been picked up yet, you don't need to check in.
+      </div>
+
+    {% elif reservation %}
+      {% if reservation['status'] == 'checked_out' %}
+        {% set overdue = reservation['return_date'] < today %}
+        <div class="card {% if overdue %}border-danger{% else %}border-success{% endif %}">
+          <div class="card-header {% if overdue %}bg-danger text-white{% else %}bg-success text-white{% endif %}">
+            <strong>Camera {{ reservation['camera_number'] }}</strong>
+            {% if overdue %}<span class="float-end">OVERDUE</span>{% endif %}
+          </div>
+          <div class="card-body">
+            <p class="mb-1"><strong>Checked out by:</strong> {{ reservation['student_name'] }}</p>
+            <p class="mb-3 {% if overdue %}text-danger fw-bold{% endif %}">
+              <strong>Due back:</strong> {{ reservation['return_date'] }}
+              {% if overdue %} — Thank you for returning it!{% endif %}
+            </p>
+            <form method="post">
+              <input type="hidden" name="netid" value="{{ netid }}">
+              <input type="hidden" name="action" value="return">
+              <div class="d-grid">
+                <button type="submit" class="btn btn-success btn-lg"
+                        onclick="return confirm('Confirm you are returning Camera {{ reservation['camera_number'] }}?')">
+                  Confirm Check In — Camera {{ reservation['camera_number'] }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+      {% elif reservation['status'] == 'reserved' %}
+        <div class="alert alert-warning">
+          You have a reservation for <strong>Camera {{ reservation['camera_number'] }}</strong>
+          with a pickup date of <strong>{{ reservation['pickup_date'] }}</strong>,
+          but it hasn't been checked out yet. Nothing to check in.
+        </div>
+      {% endif %}
+    {% endif %}
+
+    <div class="mt-3 text-center">
+      <a href="{{ url_for('index') }}">← Back to availability</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -4,10 +4,14 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1 class="h3 mb-0">Camera Availability</h1>
-  <a href="{{ url_for('reserve') }}" class="btn btn-primary">Reserve a Camera</a>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('checkin') }}" class="btn btn-outline-success">Check In a Camera</a>
+    <a href="{{ url_for('reserve') }}" class="btn btn-primary">Reserve a Camera</a>
+  </div>
 </div>
 
-<div class="row g-3">
+<!-- Today's status cards -->
+<div class="row g-3 mb-5">
   {% for item in cameras %}
     {% set cam = item.camera %}
     {% set res = item.reservation %}
@@ -43,11 +47,50 @@
   {% endfor %}
 </div>
 
-<div class="mt-4">
-  <h5>Legend</h5>
-  <span class="badge bg-success me-2">Available</span>
-  <span class="badge bg-warning text-dark me-2">Reserved</span>
-  <span class="badge bg-danger me-2">Overdue</span>
-  <span class="badge border border-warning text-warning me-2" style="background:none">Checked Out</span>
+<!-- 2-week availability calendar -->
+<h5 class="mb-3">2-Week Availability</h5>
+<div class="table-responsive">
+  <table class="table table-bordered text-center align-middle calendar-table">
+    <thead class="table-dark">
+      <tr>
+        <th style="min-width:80px">Camera</th>
+        {% for d in calendar_dates %}
+          {% set weekday = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][d | strptime_weekday] %}
+          <th style="min-width:58px; font-size:0.78rem">
+            {{ weekday }}<br>{{ d[5:] }}
+          </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in calendar_rows %}
+        <tr>
+          <td class="fw-semibold">Cam {{ row.camera['number'] }}</td>
+          {% for d in calendar_dates %}
+            {% set res = row.days[d] %}
+            {% set overdue = res and res['status'] == 'checked_out' and res['return_date'] < today %}
+            <td class="
+              {% if overdue %}table-danger
+              {% elif res and res['status'] == 'checked_out' %}table-warning
+              {% elif res %}table-info
+              {% else %}table-success
+              {% endif %}"
+              title="{% if res %}{{ res['student_name'] }} ({{ res['status'] }}){% else %}Available{% endif %}">
+              {% if res %}
+                <span style="font-size:0.7rem">{{ res['student_name'].split()[0] }}</span>
+              {% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="mt-2 mb-4 d-flex gap-3 flex-wrap" style="font-size:0.85rem">
+  <span><span class="badge bg-success">&nbsp;&nbsp;</span> Available</span>
+  <span><span class="badge bg-info">&nbsp;&nbsp;</span> Reserved</span>
+  <span><span class="badge bg-warning text-dark">&nbsp;&nbsp;</span> Checked Out</span>
+  <span><span class="badge bg-danger">&nbsp;&nbsp;</span> Overdue</span>
 </div>
 {% endblock %}

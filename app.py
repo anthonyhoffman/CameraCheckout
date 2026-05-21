@@ -16,6 +16,10 @@ ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "changeme")
 
 db.init_db()
 
+@app.template_filter("strptime_weekday")
+def strptime_weekday(date_str):
+    return date.fromisoformat(date_str).weekday()
+
 
 # ---------------------------------------------------------------------------
 # Auth helper
@@ -38,7 +42,9 @@ def admin_required(f):
 def index():
     today = date.today().isoformat()
     cameras = db.get_cameras_with_status(today)
-    return render_template("index.html", cameras=cameras, today=today)
+    calendar_rows, calendar_dates = db.get_calendar_data(14)
+    return render_template("index.html", cameras=cameras, today=today,
+                           calendar_rows=calendar_rows, calendar_dates=calendar_dates)
 
 
 @app.route("/reserve", methods=["GET", "POST"])
@@ -83,7 +89,26 @@ def reserve():
 def my_reservation():
     netid = request.args.get("netid", "").strip().lower()
     reservation = db.get_reservation_by_netid(netid) if netid else None
-    return render_template("my_reservation.html", reservation=reservation, netid=netid)
+    return render_template("my_reservation.html", reservation=reservation, netid=netid,
+                           today=date.today().isoformat())
+
+
+@app.route("/checkin", methods=["GET", "POST"])
+def checkin():
+    reservation = None
+    netid = ""
+    if request.method == "POST":
+        netid = request.form.get("netid", "").strip().lower()
+        if netid and request.form.get("action") == "return":
+            res = db.get_reservation_by_netid(netid)
+            if res and res["status"] == "checked_out":
+                db.set_status(res["id"], "returned")
+                flash(f"Camera {res['camera_number']} checked in. Thanks!", "success")
+                return redirect(url_for("index"))
+        if netid:
+            reservation = db.get_reservation_by_netid(netid)
+    return render_template("checkin.html", reservation=reservation, netid=netid,
+                           today=date.today().isoformat())
 
 
 @app.route("/cancel/<int:res_id>", methods=["POST"])

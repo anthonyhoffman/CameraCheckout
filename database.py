@@ -160,3 +160,30 @@ def add_camera():
 def get_camera_by_id(camera_id: int):
     with get_db() as conn:
         return conn.execute("SELECT * FROM cameras WHERE id=?", (camera_id,)).fetchone()
+
+
+def get_calendar_data(days: int = 14):
+    """Return cameras x dates grid for the next N days."""
+    start = date.today()
+    dates = [(start + timedelta(days=i)).isoformat() for i in range(days)]
+    end = dates[-1]
+
+    with get_db() as conn:
+        cameras = conn.execute(
+            "SELECT * FROM cameras WHERE active=1 ORDER BY number"
+        ).fetchall()
+
+        reservations = conn.execute("""
+            SELECT * FROM reservations
+            WHERE status IN ('reserved','checked_out')
+            AND pickup_date <= ? AND return_date >= ?
+        """, (end, dates[0])).fetchall()
+
+        grid = {cam["id"]: {d: None for d in dates} for cam in cameras}
+        for res in reservations:
+            for d in dates:
+                if res["pickup_date"] <= d <= res["return_date"]:
+                    if grid[res["camera_id"]][d] is None:
+                        grid[res["camera_id"]][d] = res
+
+        return [{"camera": cam, "days": grid[cam["id"]]} for cam in cameras], dates
