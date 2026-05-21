@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Camera Checkout — Home{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0">Camera Availability</h1>
+  <a href="{{ url_for('reserve') }}" class="btn btn-primary">Reserve a Camera</a>
+</div>
+
+<div class="row g-3">
+  {% for item in cameras %}
+    {% set cam = item.camera %}
+    {% set res = item.reservation %}
+    {% set overdue = res and res['status'] == 'checked_out' and res['return_date'] < today %}
+
+    <div class="col-sm-6 col-md-4">
+      <div class="card h-100 {% if overdue %}border-danger{% elif res %}border-warning{% else %}border-success{% endif %}">
+        <div class="card-header d-flex justify-content-between align-items-center
+          {% if overdue %}bg-danger text-white{% elif res %}bg-warning{% else %}bg-success text-white{% endif %}">
+          <strong>Camera {{ cam['number'] }}</strong>
+          <span class="badge bg-white text-dark">
+            {% if overdue %}OVERDUE
+            {% elif res and res['status'] == 'checked_out' %}CHECKED OUT
+            {% elif res %}RESERVED
+            {% else %}AVAILABLE
+            {% endif %}
+          </span>
+        </div>
+        <div class="card-body">
+          {% if res %}
+            <p class="mb-1"><strong>Student:</strong> {{ res['student_name'] }}</p>
+            <p class="mb-1"><strong>Pickup:</strong> {{ res['pickup_date'] }}</p>
+            <p class="mb-0 {% if overdue %}text-danger fw-bold{% endif %}">
+              <strong>Due back:</strong> {{ res['return_date'] }}
+              {% if overdue %} — OVERDUE{% endif %}
+            </p>
+          {% else %}
+            <p class="text-muted mb-0">Available to reserve.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<div class="mt-4">
+  <h5>Legend</h5>
+  <span class="badge bg-success me-2">Available</span>
+  <span class="badge bg-warning text-dark me-2">Reserved</span>
+  <span class="badge bg-danger me-2">Overdue</span>
+  <span class="badge border border-warning text-warning me-2" style="background:none">Checked Out</span>
+</div>
+{% endblock %}

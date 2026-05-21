@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0">Admin Dashboard</h1>
+  <form method="post" action="{{ url_for('admin_add_camera') }}">
+    <button type="submit" class="btn btn-outline-secondary btn-sm">+ Add Camera</button>
+  </form>
+</div>
+
+<!-- Camera status overview -->
+<h5 class="mb-3">Camera Status — Today</h5>
+<div class="row g-3 mb-5">
+  {% for item in cameras %}
+    {% set cam = item.camera %}
+    {% set res = item.reservation %}
+    {% set overdue = res and res['status'] == 'checked_out' and res['return_date'] < today %}
+
+    <div class="col-sm-6 col-md-4">
+      <div class="card h-100 {% if overdue %}border-danger{% elif res and res['status'] == 'checked_out' %}border-warning{% elif res %}border-info{% else %}border-success{% endif %}">
+        <div class="card-header d-flex justify-content-between
+          {% if overdue %}bg-danger text-white
+          {% elif res and res['status'] == 'checked_out' %}bg-warning
+          {% elif res %}bg-info text-white
+          {% else %}bg-success text-white{% endif %}">
+          <strong>Camera {{ cam['number'] }}</strong>
+          <span class="badge bg-white text-dark">
+            {% if overdue %}OVERDUE
+            {% elif res and res['status'] == 'checked_out' %}OUT
+            {% elif res %}RESERVED
+            {% else %}AVAILABLE{% endif %}
+          </span>
+        </div>
+        <div class="card-body small">
+          {% if res %}
+            <p class="mb-1"><strong>{{ res['student_name'] }}</strong> ({{ res['netid'] }})</p>
+            <p class="mb-1">Pickup: {{ res['pickup_date'] }}</p>
+            <p class="mb-2 {% if overdue %}text-danger fw-bold{% endif %}">Due: {{ res['return_date'] }}</p>
+            <div class="d-flex gap-1 flex-wrap">
+              {% if res['status'] == 'reserved' %}
+                <form method="post" action="{{ url_for('admin_checkout', res_id=res['id']) }}">
+                  <button class="btn btn-warning btn-sm">Mark Checked Out</button>
+                </form>
+              {% elif res['status'] == 'checked_out' %}
+                <form method="post" action="{{ url_for('admin_return', res_id=res['id']) }}">
+                  <button class="btn btn-success btn-sm">Mark Returned</button>
+                </form>
+              {% endif %}
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">No active reservation.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<!-- All reservations table -->
+<h5 class="mb-3">All Reservations</h5>
+
+<div class="mb-3">
+  <input type="text" id="filterInput" class="form-control" placeholder="Filter by name, NetID, or camera…">
+</div>
+
+<div class="table-responsive">
+  <table class="table table-hover align-middle" id="resTable">
+    <thead class="table-dark">
+      <tr>
+        <th>Camera</th>
+        <th>Student</th>
+        <th>NetID</th>
+        <th>Pickup</th>
+        <th>Due Back</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for res in reservations %}
+        {% set overdue = res['status'] == 'checked_out' and res['return_date'] < today %}
+        <tr class="{% if overdue %}table-danger{% elif res['status'] == 'returned' %}table-secondary{% elif res['status'] == 'cancelled' %}table-secondary text-muted{% endif %}">
+          <td>Camera {{ res['camera_number'] }}</td>
+          <td>{{ res['student_name'] }}</td>
+          <td>{{ res['netid'] }}</td>
+          <td>{{ res['pickup_date'] }}</td>
+          <td class="{% if overdue %}text-danger fw-bold{% endif %}">
+            {{ res['return_date'] }}{% if overdue %} ⚠{% endif %}
+          </td>
+          <td>
+            <span class="badge
+              {% if overdue %}bg-danger
+              {% elif res['status'] == 'checked_out' %}bg-warning text-dark
+              {% elif res['status'] == 'reserved' %}bg-info
+              {% elif res['status'] == 'returned' %}bg-success
+              {% else %}bg-secondary{% endif %}">
+              {{ res['status'].replace('_', ' ').upper() }}
+            </span>
+          </td>
+          <td>
+            <div class="d-flex gap-1 flex-wrap">
+              {% if res['status'] == 'reserved' %}
+                <form method="post" action="{{ url_for('admin_checkout', res_id=res['id']) }}">
+                  <button class="btn btn-warning btn-sm">Check Out</button>
+                </form>
+              {% endif %}
+              {% if res['status'] == 'checked_out' %}
+                <form method="post" action="{{ url_for('admin_return', res_id=res['id']) }}">
+                  <button class="btn btn-success btn-sm">Return</button>
+                </form>
+              {% endif %}
+              {% if res['status'] in ('reserved', 'checked_out') %}
+                <!-- Extend -->
+                <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse"
+                        data-bs-target="#extend-{{ res['id'] }}">Extend</button>
+                <form method="post" action="{{ url_for('admin_cancel', res_id=res['id']) }}"
+                      onsubmit="return confirm('Cancel this reservation?')">
+                  <button class="btn btn-outline-danger btn-sm">Cancel</button>
+                </form>
+              {% endif %}
+            </div>
+            {% if res['status'] in ('reserved', 'checked_out') %}
+              <div class="collapse mt-2" id="extend-{{ res['id'] }}">
+                <form method="post" action="{{ url_for('admin_extend', res_id=res['id']) }}" class="d-flex gap-1">
+                  <input type="date" name="new_return_date" class="form-control form-control-sm"
+                         value="{{ res['return_date'] }}" min="{{ today }}" required>
+                  <button class="btn btn-primary btn-sm">Save</button>
+                </form>
+              </div>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" class="text-center text-muted">No reservations yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+  document.getElementById('filterInput').addEventListener('input', function () {
+    const val = this.value.toLowerCase();
+    document.querySelectorAll('#resTable tbody tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(val) ? '' : 'none';
+    });
+  });
+</script>
+{% endblock %}

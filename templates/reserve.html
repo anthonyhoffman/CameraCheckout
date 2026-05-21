@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Reserve a Camera{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h1 class="h3 mb-4">Reserve a Camera</h1>
+
+    <form method="post">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Your Name</label>
+        <input type="text" name="name" class="form-control" placeholder="First Last" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">NetID</label>
+        <input type="text" name="netid" class="form-control" placeholder="e.g. ahoffma8" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Camera</label>
+        <select name="camera_id" class="form-select" required>
+          <option value="">— Select a camera —</option>
+          {% for item in cameras %}
+            {% set cam = item.camera %}
+            {% set res = item.reservation %}
+            <option value="{{ cam['id'] }}" {% if res %}disabled{% endif %}>
+              Camera {{ cam['number'] }}{% if res %} (unavailable today){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Cameras marked unavailable are booked for today but may be free on future dates.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Pickup Date</label>
+        <input type="date" name="pickup_date" class="form-control" min="{{ today }}" required>
+        <div class="form-text">Camera is due back 2 days after pickup.</div>
+      </div>
+
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary btn-lg">Confirm Reservation</button>
+      </div>
+    </form>
+
+    <div class="mt-3 text-center">
+      <a href="{{ url_for('index') }}">← Back to availability</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
