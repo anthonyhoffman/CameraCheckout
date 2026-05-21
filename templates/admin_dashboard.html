@@ -3,14 +3,16 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="h3 mb-0">Admin Dashboard</h1>
+  <h1 class="h3 mb-0"><i class="bi bi-speedometer2 me-2"></i>Admin Dashboard</h1>
   <form method="post" action="{{ url_for('admin_add_camera') }}">
-    <button type="submit" class="btn btn-outline-secondary btn-sm">+ Add Camera</button>
+    <button type="submit" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i>Add Camera
+    </button>
   </form>
 </div>
 
 <!-- Camera status overview -->
-<h5 class="mb-3">Camera Status — Today</h5>
+<h5 class="section-label mb-3"><i class="bi bi-camera-fill me-2"></i>Camera Status — Today</h5>
 <div class="row g-3 mb-5">
   {% for item in cameras %}
     {% set cam = item.camera %}
@@ -18,39 +20,61 @@
     {% set overdue = res and res['status'] == 'checked_out' and res['return_date'] < today %}
 
     <div class="col-sm-6 col-md-4">
-      <div class="card h-100 {% if overdue %}border-danger{% elif res and res['status'] == 'checked_out' %}border-warning{% elif res %}border-info{% else %}border-success{% endif %}">
-        <div class="card-header d-flex justify-content-between
-          {% if overdue %}bg-danger text-white
-          {% elif res and res['status'] == 'checked_out' %}bg-warning
-          {% elif res %}bg-info text-white
-          {% else %}bg-success text-white{% endif %}">
-          <strong>Camera {{ cam['number'] }}</strong>
-          <span class="badge bg-white text-dark">
-            {% if overdue %}OVERDUE
+      <div class="card h-100 status-card
+        {% if overdue %}status-overdue
+        {% elif res and res['status'] == 'checked_out' %}status-out
+        {% elif res %}status-reserved
+        {% else %}status-available{% endif %}">
+
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span class="camera-label">
+            <i class="bi bi-camera me-1"></i>{{ cam | camera_label }}
+          </span>
+          <span class="status-pill">
+            {% if overdue %}<i class="bi bi-exclamation-triangle-fill me-1"></i>OVERDUE
             {% elif res and res['status'] == 'checked_out' %}OUT
             {% elif res %}RESERVED
             {% else %}AVAILABLE{% endif %}
           </span>
         </div>
+
         <div class="card-body small">
           {% if res %}
-            <p class="mb-1"><strong>{{ res['student_name'] }}</strong> ({{ res['netid'] }})</p>
-            <p class="mb-1">Pickup: {{ res['pickup_date'] }}</p>
-            <p class="mb-2 {% if overdue %}text-danger fw-bold{% endif %}">Due: {{ res['return_date'] }}</p>
+            <p class="mb-1"><i class="bi bi-person me-1 text-muted"></i><strong>{{ res['student_name'] }}</strong> ({{ res['netid'] }})</p>
+            <p class="mb-1"><i class="bi bi-calendar-event me-1 text-muted"></i>Pickup: {{ res['pickup_date'] }}</p>
+            <p class="mb-2 {% if overdue %}text-danger fw-bold{% endif %}">
+              <i class="bi bi-calendar-x me-1"></i>Due: {{ res['return_date'] }}
+            </p>
             <div class="d-flex gap-1 flex-wrap">
               {% if res['status'] == 'reserved' %}
                 <form method="post" action="{{ url_for('admin_checkout', res_id=res['id']) }}">
-                  <button class="btn btn-warning btn-sm">Mark Checked Out</button>
+                  <button class="btn btn-warning btn-sm"><i class="bi bi-arrow-up-right-circle me-1"></i>Check Out</button>
                 </form>
               {% elif res['status'] == 'checked_out' %}
                 <form method="post" action="{{ url_for('admin_return', res_id=res['id']) }}">
-                  <button class="btn btn-success btn-sm">Mark Returned</button>
+                  <button class="btn btn-success btn-sm"><i class="bi bi-box-arrow-in-left me-1"></i>Mark Returned</button>
                 </form>
               {% endif %}
             </div>
           {% else %}
-            <p class="text-muted mb-0">No active reservation.</p>
+            <p class="text-muted mb-2"><i class="bi bi-check2-circle me-1"></i>No active reservation.</p>
           {% endif %}
+
+          <!-- Rename camera -->
+          <div class="mt-2 pt-2 border-top">
+            <button class="btn btn-link btn-sm p-0 text-muted" data-bs-toggle="collapse"
+                    data-bs-target="#rename-{{ cam['id'] }}">
+              <i class="bi bi-pencil me-1"></i>Edit name
+            </button>
+            <div class="collapse mt-2" id="rename-{{ cam['id'] }}">
+              <form method="post" action="{{ url_for('admin_rename_camera', camera_id=cam['id']) }}" class="d-flex gap-1">
+                <input type="text" name="name" class="form-control form-control-sm"
+                       placeholder="e.g. Canon EOS R50" value="{{ cam['name'] or '' }}">
+                <button class="btn btn-primary btn-sm">Save</button>
+              </form>
+              <div class="form-text">Leave blank to just show the number.</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -58,21 +82,24 @@
 </div>
 
 <!-- All reservations table -->
-<h5 class="mb-3">All Reservations</h5>
+<h5 class="section-label mb-3"><i class="bi bi-list-ul me-2"></i>All Reservations</h5>
 
 <div class="mb-3">
-  <input type="text" id="filterInput" class="form-control" placeholder="Filter by name, NetID, or camera…">
+  <div class="input-group">
+    <span class="input-group-text"><i class="bi bi-search"></i></span>
+    <input type="text" id="filterInput" class="form-control" placeholder="Filter by name, NetID, or camera…">
+  </div>
 </div>
 
 <div class="table-responsive">
   <table class="table table-hover align-middle" id="resTable">
     <thead class="table-dark">
       <tr>
-        <th>Camera</th>
-        <th>Student</th>
+        <th><i class="bi bi-camera me-1"></i>Camera</th>
+        <th><i class="bi bi-person me-1"></i>Student</th>
         <th>NetID</th>
-        <th>Pickup</th>
-        <th>Due Back</th>
+        <th><i class="bi bi-calendar-event me-1"></i>Pickup</th>
+        <th><i class="bi bi-calendar-x me-1"></i>Due Back</th>
         <th>Status</th>
         <th>Actions</th>
       </tr>
@@ -81,15 +108,15 @@
       {% for res in reservations %}
         {% set overdue = res['status'] == 'checked_out' and res['return_date'] < today %}
         <tr class="{% if overdue %}table-danger{% elif res['status'] == 'returned' %}table-secondary{% elif res['status'] == 'cancelled' %}table-secondary text-muted{% endif %}">
-          <td>Camera {{ res['camera_number'] }}</td>
+          <td class="fw-semibold">Camera {{ res['camera_number'] }}</td>
           <td>{{ res['student_name'] }}</td>
-          <td>{{ res['netid'] }}</td>
+          <td><code>{{ res['netid'] }}</code></td>
           <td>{{ res['pickup_date'] }}</td>
           <td class="{% if overdue %}text-danger fw-bold{% endif %}">
-            {{ res['return_date'] }}{% if overdue %} ⚠{% endif %}
+            {{ res['return_date'] }}{% if overdue %} <i class="bi bi-exclamation-triangle-fill"></i>{% endif %}
           </td>
           <td>
-            <span class="badge
+            <span class="badge rounded-pill
               {% if overdue %}bg-danger
               {% elif res['status'] == 'checked_out' %}bg-warning text-dark
               {% elif res['status'] == 'reserved' %}bg-info
@@ -111,12 +138,13 @@
                 </form>
               {% endif %}
               {% if res['status'] in ('reserved', 'checked_out') %}
-                <!-- Extend -->
                 <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse"
-                        data-bs-target="#extend-{{ res['id'] }}">Extend</button>
+                        data-bs-target="#extend-{{ res['id'] }}">
+                  <i class="bi bi-calendar-plus"></i>
+                </button>
                 <form method="post" action="{{ url_for('admin_cancel', res_id=res['id']) }}"
                       onsubmit="return confirm('Cancel this reservation?')">
-                  <button class="btn btn-outline-danger btn-sm">Cancel</button>
+                  <button class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle"></i></button>
                 </form>
               {% endif %}
             </div>
@@ -132,7 +160,9 @@
           </td>
         </tr>
       {% else %}
-        <tr><td colspan="7" class="text-center text-muted">No reservations yet.</td></tr>
+        <tr><td colspan="7" class="text-center text-muted py-4">
+          <i class="bi bi-inbox display-6 d-block mb-2"></i>No reservations yet.
+        </td></tr>
       {% endfor %}
     </tbody>
   </table>

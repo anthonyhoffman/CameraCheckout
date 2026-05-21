@@ -20,6 +20,12 @@ db.init_db()
 def strptime_weekday(date_str):
     return date.fromisoformat(date_str).weekday()
 
+@app.template_filter("camera_label")
+def camera_label(cam):
+    if cam["name"]:
+        return f"Camera {cam['number']} — {cam['name']}"
+    return f"Camera {cam['number']}"
+
 
 # ---------------------------------------------------------------------------
 # Auth helper
@@ -183,6 +189,15 @@ def admin_extend(res_id):
     if new_return:
         db.extend_reservation(res_id, new_return)
         flash("Return date updated.", "success")
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/rename-camera/<int:camera_id>", methods=["POST"])
+@admin_required
+def admin_rename_camera(camera_id):
+    name = request.form.get("name", "").strip()
+    db.rename_camera(camera_id, name)
+    flash("Camera name updated.", "success")
     return redirect(url_for("admin_dashboard"))
 
 

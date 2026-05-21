@@ -32,6 +32,12 @@ def init_db():
                 CONSTRAINT valid_status CHECK (status IN ('reserved','checked_out','returned','cancelled'))
             );
         """)
+        # Add name column if upgrading from older schema
+        try:
+            conn.execute("ALTER TABLE cameras ADD COLUMN name TEXT")
+        except Exception:
+            pass
+
         # Seed cameras 1-6 if none exist
         if conn.execute("SELECT COUNT(*) FROM cameras").fetchone()[0] == 0:
             conn.executemany(
@@ -155,6 +161,11 @@ def add_camera():
         max_num = conn.execute("SELECT MAX(number) FROM cameras").fetchone()[0] or 0
         conn.execute("INSERT INTO cameras (number) VALUES (?)", (max_num + 1,))
         return max_num + 1
+
+
+def rename_camera(camera_id: int, name: str):
+    with get_db() as conn:
+        conn.execute("UPDATE cameras SET name=? WHERE id=?", (name or None, camera_id))
 
 
 def get_camera_by_id(camera_id: int):

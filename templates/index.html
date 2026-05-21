@@ -2,15 +2,26 @@
 {% block title %}Camera Checkout — Home{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="h3 mb-0">Camera Availability</h1>
-  <div class="d-flex gap-2">
-    <a href="{{ url_for('reserve') }}" class="btn btn-primary">Reserve a Camera</a>
-    <a href="{{ url_for('checkin') }}" class="btn btn-outline-success">Check In a Camera</a>
+
+<!-- Hero -->
+<div class="hero-banner mb-4">
+  <div class="hero-icon"><i class="bi bi-camera2"></i></div>
+  <div>
+    <h1 class="hero-title">Camera Checkout</h1>
+    <p class="hero-sub">Reserve a camera, check availability, and return equipment below.</p>
+  </div>
+  <div class="d-flex gap-2 ms-auto">
+    <a href="{{ url_for('reserve') }}" class="btn btn-primary">
+      <i class="bi bi-calendar-plus me-1"></i>Reserve
+    </a>
+    <a href="{{ url_for('checkin') }}" class="btn btn-outline-success">
+      <i class="bi bi-box-arrow-in-left me-1"></i>Check In
+    </a>
   </div>
 </div>
 
-<!-- Today's status cards -->
+<!-- Camera cards -->
+<h5 class="section-label mb-3"><i class="bi bi-camera-fill me-2"></i>Today's Status</h5>
 <div class="row g-3 mb-5">
   {% for item in cameras %}
     {% set cam = item.camera %}
@@ -18,28 +29,34 @@
     {% set overdue = res and res['status'] == 'checked_out' and res['return_date'] < today %}
 
     <div class="col-sm-6 col-md-4">
-      <div class="card h-100 {% if overdue %}border-danger{% elif res %}border-warning{% else %}border-success{% endif %}">
-        <div class="card-header d-flex justify-content-between align-items-center
-          {% if overdue %}bg-danger text-white{% elif res %}bg-warning{% else %}bg-success text-white{% endif %}">
-          <strong>Camera {{ cam['number'] }}</strong>
-          <span class="badge bg-white text-dark">
-            {% if overdue %}OVERDUE
-            {% elif res and res['status'] == 'checked_out' %}CHECKED OUT
-            {% elif res %}RESERVED
-            {% else %}AVAILABLE
-            {% endif %}
+      <div class="card h-100 status-card
+        {% if overdue %}status-overdue
+        {% elif res and res['status'] == 'checked_out' %}status-out
+        {% elif res %}status-reserved
+        {% else %}status-available{% endif %}">
+
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span class="camera-label">
+            <i class="bi bi-camera me-1"></i>{{ cam | camera_label }}
+          </span>
+          <span class="status-pill">
+            {% if overdue %}<i class="bi bi-exclamation-triangle-fill me-1"></i>OVERDUE
+            {% elif res and res['status'] == 'checked_out' %}<i class="bi bi-arrow-up-right-circle me-1"></i>OUT
+            {% elif res %}<i class="bi bi-clock me-1"></i>RESERVED
+            {% else %}<i class="bi bi-check-circle me-1"></i>AVAILABLE{% endif %}
           </span>
         </div>
+
         <div class="card-body">
           {% if res %}
-            <p class="mb-1"><strong>Student:</strong> {{ res['student_name'] }}</p>
-            <p class="mb-1"><strong>Pickup:</strong> {{ res['pickup_date'] }}</p>
+            <p class="mb-1"><i class="bi bi-person me-1 text-muted"></i>{{ res['student_name'] }}</p>
+            <p class="mb-1"><i class="bi bi-calendar-event me-1 text-muted"></i>Pickup: {{ res['pickup_date'] }}</p>
             <p class="mb-0 {% if overdue %}text-danger fw-bold{% endif %}">
-              <strong>Due back:</strong> {{ res['return_date'] }}
-              {% if overdue %} — OVERDUE{% endif %}
+              <i class="bi bi-calendar-x me-1 {% if not overdue %}text-muted{% endif %}"></i>
+              Due: {{ res['return_date'] }}{% if overdue %} — OVERDUE{% endif %}
             </p>
           {% else %}
-            <p class="text-muted mb-0">Available to reserve.</p>
+            <p class="text-muted mb-0"><i class="bi bi-check2-circle me-1"></i>Available to reserve.</p>
           {% endif %}
         </div>
       </div>
@@ -47,8 +64,8 @@
   {% endfor %}
 </div>
 
-<!-- 2-week availability calendar -->
-<h5 class="mb-3">2-Week Availability</h5>
+<!-- 2-week calendar -->
+<h5 class="section-label mb-3"><i class="bi bi-calendar-week me-2"></i>2-Week Availability</h5>
 <div class="table-responsive">
   <table class="table table-bordered text-center align-middle calendar-table">
     <thead class="table-dark">
@@ -65,16 +82,17 @@
     <tbody>
       {% for row in calendar_rows %}
         <tr>
-          <td class="fw-semibold">Cam {{ row.camera['number'] }}</td>
+          <td class="fw-semibold text-start ps-2" style="font-size:0.82rem">
+            <i class="bi bi-camera me-1 text-muted"></i>{{ row.camera | camera_label }}
+          </td>
           {% for d in calendar_dates %}
             {% set res = row.days[d] %}
             {% set overdue = res and res['status'] == 'checked_out' and res['return_date'] < today %}
-            <td class="
-              {% if overdue %}table-danger
-              {% elif res and res['status'] == 'checked_out' %}table-warning
-              {% elif res %}table-info
-              {% else %}table-success
-              {% endif %}"
+            <td class="cal-cell
+              {% if overdue %}cal-overdue
+              {% elif res and res['status'] == 'checked_out' %}cal-out
+              {% elif res %}cal-reserved
+              {% else %}cal-available{% endif %}"
               title="{% if res %}{{ res['student_name'] }} ({{ res['status'] }}){% else %}Available{% endif %}">
               {% if res %}
                 <span style="font-size:0.7rem">{{ res['student_name'].split()[0] }}</span>
@@ -87,10 +105,10 @@
   </table>
 </div>
 
-<div class="mt-2 mb-4 d-flex gap-3 flex-wrap" style="font-size:0.85rem">
-  <span><span class="badge bg-success">&nbsp;&nbsp;</span> Available</span>
-  <span><span class="badge bg-info">&nbsp;&nbsp;</span> Reserved</span>
-  <span><span class="badge bg-warning text-dark">&nbsp;&nbsp;</span> Checked Out</span>
-  <span><span class="badge bg-danger">&nbsp;&nbsp;</span> Overdue</span>
+<div class="legend mt-2 mb-4">
+  <span><span class="legend-dot" style="background:#d1fae5;border:1.5px solid #6ee7b7"></span>Available</span>
+  <span><span class="legend-dot" style="background:#dbeafe;border:1.5px solid #93c5fd"></span>Reserved</span>
+  <span><span class="legend-dot" style="background:#fef3c7;border:1.5px solid #fcd34d"></span>Checked Out</span>
+  <span><span class="legend-dot" style="background:#fee2e2;border:1.5px solid #fca5a5"></span>Overdue</span>
 </div>
 {% endblock %}
