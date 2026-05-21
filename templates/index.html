@@ -14,7 +14,7 @@
     <a href="{{ url_for('reserve') }}" class="btn btn-primary">
       <i class="bi bi-calendar-plus me-1"></i>Reserve
     </a>
-    <a href="{{ url_for('checkin') }}" class="btn btn-outline-success">
+    <a href="{{ url_for('checkin') }}" class="btn btn-primary">
       <i class="bi bi-box-arrow-in-left me-1"></i>Check In
     </a>
   </div>
@@ -73,7 +73,8 @@
         <th style="min-width:80px">Camera</th>
         {% for d in calendar_dates %}
           {% set weekday = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][d | strptime_weekday] %}
-          <th style="min-width:58px; font-size:0.78rem">
+          {% set is_monday = (d | strptime_weekday) == 0 %}
+          <th style="min-width:58px; font-size:0.78rem" {% if is_monday %}class="week-start"{% endif %}>
             {{ weekday }}<br>{{ d[5:] }}
           </th>
         {% endfor %}
@@ -88,7 +89,8 @@
           {% for d in calendar_dates %}
             {% set res = row.days[d] %}
             {% set overdue = res and res['status'] == 'checked_out' and res['return_date'] < today %}
-            <td class="cal-cell
+            {% set is_monday = (d | strptime_weekday) == 0 %}
+            <td class="cal-cell {% if is_monday %}week-start{% endif %}
               {% if overdue %}cal-overdue
               {% elif res and res['status'] == 'checked_out' %}cal-out
               {% elif res %}cal-reserved
