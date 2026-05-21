@@ -178,7 +178,8 @@ body {
 }
 
 .cal-cell { padding: 0.4rem 0.25rem; font-size: 0.75rem; }
-.week-start { border-left: 3px solid #475569 !important; }
+.calendar-head th { background: #64748b; color: white; }
+.week-start { border-left: 3px solid #64748b !important; }
 .cal-available { background: #d1fae5 !important; }
 .cal-reserved  { background: #dbeafe !important; }
 .cal-out       { background: #fef3c7 !important; }
