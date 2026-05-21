@@ -9,32 +9,33 @@
     <form method="post">
       <div class="mb-3">
         <label class="form-label fw-semibold">Your Name</label>
-        <input type="text" name="name" class="form-control" placeholder="First Last" required>
+        <input type="text" name="name" class="form-control form-control-lg" placeholder="First Last" required>
       </div>
 
       <div class="mb-3">
         <label class="form-label fw-semibold">NetID</label>
-        <input type="text" name="netid" class="form-control" placeholder="e.g. ahoffma8" required>
+        <input type="text" name="netid" class="form-control form-control-lg" placeholder="e.g. ahoffma8" required>
       </div>
 
       <div class="mb-3">
         <label class="form-label fw-semibold">Camera</label>
-        <select name="camera_id" class="form-select" required>
+        <select name="camera_id" class="form-select form-select-lg" required>
           <option value="">— Select a camera —</option>
           {% for item in cameras %}
             {% set cam = item.camera %}
             {% set res = item.reservation %}
-            <option value="{{ cam['id'] }}" {% if res %}disabled{% endif %}>
-              Camera {{ cam['number'] }}{% if res %} (unavailable today){% endif %}
+            <option value="{{ cam['id'] }}">
+              Camera {{ cam['number'] }}{% if res %} (booked today){% endif %}
             </option>
           {% endfor %}
         </select>
-        <div class="form-text">Cameras marked unavailable are booked for today but may be free on future dates.</div>
+        <div class="form-text">Cameras noted as "booked today" may still be available on future dates.</div>
       </div>
 
-      <div class="mb-3">
+      <div class="mb-4">
         <label class="form-label fw-semibold">Pickup Date</label>
-        <input type="date" name="pickup_date" class="form-control" min="{{ today }}" required>
+        <input type="text" id="pickup_date" name="pickup_date" class="form-control form-control-lg"
+               placeholder="Select a date" required>
         <div class="form-text">Camera is due back 2 days after pickup.</div>
       </div>
 
@@ -48,4 +49,15 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  flatpickr("#pickup_date", {
+    minDate: "today",
+    dateFormat: "Y-m-d",
+    disableMobile: false,
+    allowInput: false
+  });
+</script>
 {% endblock %}

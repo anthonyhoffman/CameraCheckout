@@ -59,7 +59,8 @@ def reserve():
             flash("Please fill in all fields.", "error")
             return redirect(url_for("reserve"))
 
-        if pickup < date.today().isoformat():
+        from datetime import timedelta
+        if pickup < (date.today() - timedelta(days=1)).isoformat():
             flash("Pickup date cannot be in the past.", "error")
             return redirect(url_for("reserve"))
 
