@@ -36,6 +36,27 @@ body {
   font-size: 2.5rem;
   line-height: 1;
   opacity: 0.9;
+  flex-shrink: 0;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+@media (max-width: 576px) {
+  .hero-banner {
+    flex-wrap: wrap;
+  }
+  .hero-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+  .hero-actions .btn {
+    flex: 1;
+  }
 }
 
 .hero-title {
